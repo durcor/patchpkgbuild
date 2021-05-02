@@ -20,15 +20,6 @@ else
     exit 1
 fi
 
-# build() {
-
-# build () {
-
-# build(){
-
-# build()
-# {
-
 patch_cmd='cd ${pkgname};'
 for patch in "$@"; do
     if [ -f "$patch" ]; then
