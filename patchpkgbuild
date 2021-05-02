@@ -42,6 +42,7 @@ for patch in "$@"; do
     fi
 done
 patch_cmd="$patch_cmd cd ..;"
+# TODO: Add echo to PKGBUILD informing of patches injected.
 sed -i -e '1h;2,$h;$!d;g' -e "s/^build *() *\n*{/build()\n{\n    $patch_cmd/" PKGBUILD
 [ "$source_array" ] && echo "source+=($source_array)" >> PKGBUILD
 [ "$sumarray" ] && echo "sha512sums+=($sumarray)" >> PKGBUILD
