@@ -1,0 +1,50 @@
+#!/bin/sh
+# shellcheck disable=2016
+
+[ "$1" ] || {
+    echo "Usage: $0 <patch file>..."
+    exit 0
+}
+
+if [ -f PKGBUILD ]; then
+    # Restore stock PKGBUILD if it exists for successful patching.
+    if [ -f PKGBUILD.bak ]; then
+        cp PKGBUILD.bak PKGBUILD
+    else
+        echo "Saving stock PKGBUILD to PKGBUILD.bak"
+        cp PKGBUILD PKGBUILD.bak
+        echo "Modifying PKGBUILD"
+    fi
+else
+    echo "Error: No PKGBUILD found in '$PWD'"
+    exit 1
+fi
+
+# build() {
+
+# build () {
+
+# build(){
+
+# build()
+# {
+
+patch_cmd='cd ${pkgname};'
+for patch in "$@"; do
+    if [ -f "$patch" ]; then
+        patch_cmd="$patch_cmd patch -Np1 -i $(basename "$patch");"
+        [ "$source_array" ] && source_array="$source_array "
+        source_array="$source_array'$patch'"
+        [ "$sumarray" ] && sumarray="$sumarray "
+        sumarray="$sumarray'$(sha512sum "$patch" | cut -d' ' -f1)'"
+    else
+        echo "Warning: Patch file '$patch' not found."
+    fi
+done
+patch_cmd="$patch_cmd cd ..;"
+sed -i -e '1h;2,$h;$!d;g' -e "s/^build *() *\n*{/build()\n{\n    $patch_cmd" PKGBUILD
+[ "$source_array" ] && echo "source+=($source_array)" >> PKGBUILD
+[ "$sumarray" ] && echo "sha512sums+=($sumarray)" >> PKGBUILD
+
+# Require makepkg to be called separately for now.
+# makepkg -sif
