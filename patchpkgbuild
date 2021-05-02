@@ -13,8 +13,8 @@ if [ -f PKGBUILD ]; then
     else
         echo "Saving stock PKGBUILD to PKGBUILD.bak"
         cp PKGBUILD PKGBUILD.bak
-        echo "Modifying PKGBUILD"
     fi
+    echo "Modifying PKGBUILD"
 else
     echo "Error: No PKGBUILD found in '$PWD'"
     exit 1
@@ -42,7 +42,7 @@ for patch in "$@"; do
     fi
 done
 patch_cmd="$patch_cmd cd ..;"
-sed -i -e '1h;2,$h;$!d;g' -e "s/^build *() *\n*{/build()\n{\n    $patch_cmd" PKGBUILD
+sed -i -e '1h;2,$h;$!d;g' -e "s/^build *() *\n*{/build()\n{\n    $patch_cmd/" PKGBUILD
 [ "$source_array" ] && echo "source+=($source_array)" >> PKGBUILD
 [ "$sumarray" ] && echo "sha512sums+=($sumarray)" >> PKGBUILD
 
