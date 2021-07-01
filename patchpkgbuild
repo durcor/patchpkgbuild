@@ -1,42 +1,57 @@
 #!/bin/sh
 # shellcheck disable=2016
 
-[ "$1" ] || {
-    echo "Usage: $0 <patch file>..."
-    exit 0
-}
+while getopts 'rh' c; do
+    case $c in
+        r)
+            echo "Reseting PKGBUILD"
+            sed -i '/# PATCH/d' PKGBUILD
+            exit 0
+            ;;
+        h)
+            echo "Usage: $0 <patch file>..." 1>&2
+            exit 0
+            ;;
+        *)
+            exit 1
+    esac
+done
+shift $((OPTIND - 1))
 
-if [ -f PKGBUILD ]; then
-    # Restore stock PKGBUILD if it exists for successful patching.
-    if [ -f PKGBUILD.bak ]; then
-        cp PKGBUILD.bak PKGBUILD
-    else
-        echo "Saving stock PKGBUILD to PKGBUILD.bak"
-        cp PKGBUILD PKGBUILD.bak
-    fi
-    echo "Modifying PKGBUILD"
-else
-    echo "Error: No PKGBUILD found in '$PWD'"
+if [ ! "$1" ]; then
+    echo "Usage: $0 <patch file>..." 1>&2
+    exit 0
+elif [ ! -f PKGBUILD ]; then
+    echo "Error: No PKGBUILD found in '$PWD'" 1>&2
     exit 1
 fi
 
+echo "Modifying PKGBUILD"
 patch_cmd='cd ${pkgname};'
+# TODO: Add support for remote patches
 for patch in "$@"; do
     if [ -f "$patch" ]; then
-        patch_cmd="$patch_cmd patch -Np1 -i $(basename "$patch");"
+        patch_cmd="$patch_cmd patch -Np1 -i ..\/$(basename "$patch"); msg2 \"Patching $patch\";"
         [ "$source_array" ] && source_array="$source_array "
         source_array="$source_array'$patch'"
-        [ "$sumarray" ] && sumarray="$sumarray "
-        sumarray="$sumarray'$(sha512sum "$patch" | cut -d' ' -f1)'"
+        [ "$sum_array" ] && sum_array="$sum_array "
+        sum_array="$sum_array'$(sha512sum "$patch" | cut -d' ' -f1)'"
+    elif echo "$patch" | grep -q "^https*://"; then
+        patch_cmd="$patch_cmd patch -Np1 -i ..\/$(basename "$patch"); msg2 \"Patching $patch\";"
+        [ "$source_array" ] && source_array="$source_array "
+        source_array="$source_array'$patch'"
+        [ "$sum_array" ] && sum_array="$sum_array "
+        sum_array="$sum_array'$(curl "$patch" | sha512sum | cut -d' ' -f1)'"
     else
-        echo "Warning: Patch file '$patch' not found."
+        echo "Warning: Patch file '$patch' not found." 1>&2
     fi
 done
 patch_cmd="$patch_cmd cd ..;"
-# TODO: Add echo to PKGBUILD informing of patches injected.
-sed -i -e '1h;2,$h;$!d;g' -e "s/^build *() *\n*{/build()\n{\n    $patch_cmd/" PKGBUILD
-[ "$source_array" ] && echo "source+=($source_array)" >> PKGBUILD
-[ "$sumarray" ] && echo "sha512sums+=($sumarray)" >> PKGBUILD
+[ "$source_array" ] && {
+    sed -i -e "s/^build *() *\n*{/build() {\n    $patch_cmd # PATCH/" PKGBUILD
+    echo "source+=($source_array) # PATCH" >> PKGBUILD
+    echo "sha512sums+=($sum_array) # PATCH" >> PKGBUILD
+}
 
 # Require makepkg to be called separately for now.
 # makepkg -sif

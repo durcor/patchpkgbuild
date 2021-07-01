@@ -6,11 +6,11 @@ Based on [ibrokemypie](https://github.com/ibrokemypie)'s [makeppkg](https://gith
 ## Usage
 ```sh
 ./patchpkgbuild
-# Usage: ./patchpkgbuild <patch file>...
+# -> Usage: ./patchpkgbuild <patch file>...
 ls
-# PKGBUILD my.patch
+# -> PKGBUILD my.patch
 ./patchpkgbuild my.patch
-# Saving stock PKGBUILD to PKGBUILD.bak
-# Modifying PKGBUILD
+# -> Saving stock PKGBUILD to PKGBUILD.bak
+# -> Modifying PKGBUILD
 makepkg -si
 ```
